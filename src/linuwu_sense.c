@@ -4278,6 +4278,23 @@ static ssize_t predator_gpu_mode_show(struct device *dev, struct device_attribut
     return sysfs_emit(buf, "%u\n", value - 1);
 }
 
+/*
+ * Only Optimus and NVIDIA GPU only are accepted: whether a model also has automatic selection is a
+ * per-model Windows registry setting (dgpu_mode_capability), which the firmware doesn't report.
+ */
+static ssize_t predator_gpu_mode_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+    u8 mode;
+    int err;
+
+    if (kstrtou8(buf, 10, &mode) || mode > 1)
+        return -EINVAL;
+    err = WMID_gaming_set_misc_setting(ACER_WMID_MISC_SETTING_GPU_MODE, mode + 1);
+    if (err)
+        return err;
+    return count;
+}
+
  /*
   * predator sense attributes
   */
@@ -4288,7 +4305,7 @@ static ssize_t predator_gpu_mode_show(struct device *dev, struct device_attribut
  static struct device_attribute battery_limiter = __ATTR(battery_limiter, 0644, predator_battery_limit_show, predator_battery_limit_store);
  static struct device_attribute fan_speed = __ATTR(fan_speed, 0644, predator_fan_speed_show, predator_fan_speed_store);
  static struct device_attribute lcd_override = __ATTR(lcd_override, 0644, predator_lcd_override_show, predator_lcd_override_store);
- static struct device_attribute gpu_mode = __ATTR(gpu_mode, 0444, predator_gpu_mode_show, NULL);
+ static struct device_attribute gpu_mode = __ATTR(gpu_mode, 0644, predator_gpu_mode_show, predator_gpu_mode_store);
  static struct attribute *predator_sense_attrs[] = {
      &lcd_override.attr,
      &gpu_mode.attr,
